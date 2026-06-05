@@ -51,6 +51,8 @@ The WESTbahn website does not expose an API key. The exporter authenticates by r
 
 When the session expires you'll see `westpunkte_fetch_success` drop to `0`; sign in again and update the secret.
 
+> The browser cookie carries a 28-day `Max-Age`, but the server-side session can end sooner — that lifetime is not documented anywhere I've seen, so treat it as empirical. The alert rule above is the canonical way to know.
+
 ## Running with Docker
 
 ```bash
@@ -113,14 +115,37 @@ The Docker image also accepts `--healthcheck`, which hits `GET /health` on `127.
 
 ## Local development
 
+Bootstrap from the template:
+
 ```bash
-WESTBAHN_AUTH_TOKEN=… WESTBAHN_AUTH_ID_EMAIL=… cargo run
+cp .env.example .env
+$EDITOR .env          # fill in the two cookie values
+set -a; source .env; set +a
+cargo run
 ```
 
 Then:
 
 ```bash
 curl -s localhost:9090/metrics
+```
+
+## Troubleshooting
+
+Most failure modes show up in the metrics themselves — they're designed so you can diagnose without shelling into the container.
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| `westpunkte_fetch_success == 0` and the metric has been 0 for >1h | WESTbahn session expired | Sign in to westbahn.at again, copy the new `customer_auth_token`, update the secret, redeploy. |
+| Container restarts immediately with `WESTBAHN_AUTH_TOKEN is not set` (or `… must not be empty`) | Missing/empty env var | Confirm the secret is wired in — `docker compose config` shows the resolved environment; Dockge's UI shows the same under the stack's "Environment" tab. |
+| `/metrics` is reachable but contains no `westpunkte_balance` line | First fetch hasn't completed yet, or every fetch so far has failed | Check `westpunkte_last_attempt_timestamp_seconds` (zero ⇒ still booting) vs. `westpunkte_last_success_timestamp_seconds` (zero ⇒ never succeeded — inspect logs). |
+| `docker logs` shows `Failed to call Westbahn API` with a TLS / DNS error | Container can't reach the public internet | Same diagnosis as any outbound network problem — check the host's DNS, the Docker network, and that westbahn.at resolves from inside the container. |
+| `westpunkte_balance` looks stale | Either you scraped within `REFRESH_INTERVAL_SECS` of the previous scrape (cached), or fetches are failing silently | Compare `westpunkte_last_success_timestamp_seconds` against `time()` — if the gap exceeds the refresh interval, fetches are failing; check `westpunkte_fetch_success`. |
+
+For ad-hoc inspection during development, raise the log level:
+
+```bash
+RUST_LOG=westpunkte_metrics=debug,reqwest=debug cargo run
 ```
 
 ## Testing
