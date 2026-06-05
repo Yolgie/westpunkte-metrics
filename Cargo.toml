@@ -1,0 +1,36 @@
+[package]
+name = "westpunkte-metrics"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Prometheus metrics endpoint for WESTbahn loyalty points (WESTpunkte)"
+repository = "https://github.com/yolgie/westpunkte-metrics"
+readme = "README.md"
+
+[lib]
+name = "westpunkte_metrics"
+path = "src/lib.rs"
+
+[[bin]]
+name = "westpunkte-metrics"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+axum = "0.8"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "signal", "net"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+wiremock = "0.6"
+
+[profile.release]
+lto = "thin"
+strip = true
