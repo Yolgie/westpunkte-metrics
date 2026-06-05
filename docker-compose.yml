@@ -1,0 +1,18 @@
+services:
+  westpunkte-metrics:
+    image: ghcr.io/yolgie/westpunkte-metrics:latest
+    container_name: westpunkte-metrics
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    environment:
+      WESTBAHN_AUTH_TOKEN: ${WESTBAHN_AUTH_TOKEN:?required}
+      WESTBAHN_AUTH_ID_EMAIL: ${WESTBAHN_AUTH_ID_EMAIL:?required}
+      REFRESH_INTERVAL_SECS: "300"
+      RUST_LOG: "westpunkte_metrics=info"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/westpunkte-metrics", "--healthcheck"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
