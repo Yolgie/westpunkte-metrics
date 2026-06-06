@@ -91,6 +91,12 @@ services:
       REFRESH_INTERVAL_SECS: "300"
 ```
 
+## Grafana dashboard
+
+A ready-made dashboard lives at [`grafana/westpunkte.json`](./grafana/westpunkte.json). Import it via Grafana → *Dashboards* → *New* → *Import*, paste the JSON, and pick your Prometheus datasource when prompted.
+
+Four stat tiles (current balance, points expiring next + the date they expire, days until that expiry with traffic-light colouring, fetch OK/FAIL) and a time-series chart of balance and expiring batches over the last 30 days.
+
 ## Prometheus scrape config
 
 ```yaml
